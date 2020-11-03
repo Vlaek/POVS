@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include <stdlib.h>
+#include "resource.h"
 
 #define VERYMAINWINDOW "overladsdasdasdasdasd"
 #define PERCENTX 50
@@ -21,6 +22,7 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     wc.hInstance = hInstance;
     wc.lpszClassName = VERYMAINWINDOW;
     wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
+    wc.lpszMenuName = MAKEINTRESOURCE(IDR_MENU1);
 
     if (!RegisterClass(&wc))
         return 0;
@@ -44,8 +46,8 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     POINT points[K];
     for (int i = 0; i < K; i++)
     {
-        points[i].x = N * rand() / RAND_MAX;
-        points[i].y = M * rand() / RAND_MAX;
+        points[i].x = (UINT)rand()%N;
+        points[i].y = (UINT)rand()%M;
     }
     SetWindowLong(hMainWnd, GWL_USERDATA, (LONG)&points);
 
@@ -85,6 +87,99 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             return 0;
         }
 
+        case WM_COMMAND:
+
+            switch (LOWORD(wParam))
+            {
+                case MENU_ELLIPSE: 
+                {
+                    HMENU hMenu = GetMenu(hWnd);
+
+                    EnableMenuItem(hMenu, MENU_RECT, MF_ENABLED);
+                    CheckMenuItem(hMenu, MENU_RECT, MF_UNCHECKED);
+
+                    EnableMenuItem(hMenu, MENU_ELLIPSE, MF_GRAYED);
+                    CheckMenuItem(hMenu, MENU_ELLIPSE, MF_CHECKED);
+
+                    InvalidateRect(hWnd, NULL, TRUE);
+
+                    return 0;
+                }
+
+                case MENU_RECT: 
+                {
+                    HMENU hMenu = GetMenu(hWnd);
+
+                    EnableMenuItem(hMenu, MENU_RECT, MF_GRAYED);
+                    CheckMenuItem(hMenu, MENU_RECT, MF_CHECKED);
+
+                    EnableMenuItem(hMenu, MENU_ELLIPSE, MF_ENABLED);
+                    CheckMenuItem(hMenu, MENU_ELLIPSE, MF_UNCHECKED);
+
+                    InvalidateRect(hWnd, NULL, TRUE);
+
+                    return 0;
+                }
+
+                case MENU_QUIT:
+                    DestroyWindow(hWnd);
+                    return 0;
+            }
+
+        case WM_KEYDOWN:
+
+            switch (LOWORD(wParam))
+            {
+                case VK_RIGHT:
+                {
+                    PostMessage(hWnd, WM_HSCROLL, SB_LINERIGHT, NULL);
+                    return 0;
+                }
+
+                case VK_LEFT:
+                {
+                    PostMessage(hWnd, WM_HSCROLL, SB_LINELEFT, NULL);
+                    return 0;
+                }
+
+                case VK_UP:
+                {
+                    PostMessage(hWnd, WM_VSCROLL, SB_LINEUP, NULL);
+                    return 0;
+                }
+
+                case VK_DOWN:
+                {
+                    PostMessage(hWnd, WM_VSCROLL, SB_LINEDOWN, NULL);
+                    return 0;
+                }
+
+                case VK_HOME: 
+                {
+                    PostMessage(hWnd, WM_HSCROLL, SB_TOP, NULL);
+                    return 0;
+                }
+
+                case VK_END: 
+                {
+                    PostMessage(hWnd, WM_HSCROLL, SB_BOTTOM, NULL);
+                    return 0;
+                }
+
+                case VK_PRIOR: 
+                {
+                    PostMessage(hWnd, WM_VSCROLL, SB_TOP, NULL);
+                    return 0;
+                }
+
+                case VK_NEXT: 
+                {
+                    PostMessage(hWnd, WM_VSCROLL, SB_BOTTOM, NULL);
+                    return 0;
+                }
+            }
+
+
         case WM_PAINT:
         {
             SCROLLINFO hScroll = { 0 };
@@ -97,37 +192,46 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             vScroll.fMask = SIF_POS;
             GetScrollInfo(hWnd, SB_VERT, &vScroll);
 
-            PAINTSTRUCT paint;
-            HDC hDc = BeginPaint(hWnd, &paint);
-            HBRUSH brushOne = CreateSolidBrush(RGB(0, 0, 255));
-            HBRUSH brushTwo = CreateSolidBrush(RGB(255, 0, 0));
+            PAINTSTRUCT ps;
+            HDC hDc = BeginPaint(hWnd, &ps);
+            HBRUSH brushOne = CreateSolidBrush(RGB(90, 60, 90));
+            HBRUSH brushTwo = CreateSolidBrush(RGB(60, 90, 60));
 
             RECT rect;
-            POINT* points = (POINT*)GetWindowLong(hWnd, GWL_USERDATA);
+            POINT *points = (POINT*)GetWindowLong(hWnd, GWL_USERDATA);
 
+            HMENU hMenu = GetMenu(hWnd);
+            MENUITEMINFO iteminfo = { 0 };
+            iteminfo.cbSize = sizeof(MENUITEMINFO);
+            iteminfo.fMask = MIIM_STATE;
+            GetMenuItemInfo(hMenu, MENU_ELLIPSE, FALSE, &iteminfo);
+
+            UINT figure = iteminfo.fState & MFS_CHECKED ? R * 2 : 0;
+            //функции с одинаковым списком параметров 
             for (int i = 0; i < K; i++)
             {
-                rect.right = points[i].x + R - hScroll.nPos;
+                rect.right = points[i].x + R; - hScroll.nPos;
                 rect.left = points[i].x - R - hScroll.nPos;
                 rect.top = points[i].y - R - vScroll.nPos;
                 rect.bottom = points[i].y + R - vScroll.nPos;
 
-                if (IntersectRect(&rect, &paint.rcPaint, &rect))
+                if (IntersectRect(&rect, &ps.rcPaint, &rect))
                 {
                     if (i % 2 == 0) 
                         SelectObject(hDc, brushOne);
                     else 
                         SelectObject(hDc, brushTwo);
-                    Ellipse(hDc,
+
+                    RoundRect(hDc,
                         points[i].x - R - hScroll.nPos, points[i].y - R - vScroll.nPos,
-                        points[i].x + R - hScroll.nPos, points[i].y + R - vScroll.nPos);
+                        points[i].x + R - hScroll.nPos, points[i].y + R - vScroll.nPos, figure, figure);
                 }
             }
 
             DeleteObject(brushOne);
             DeleteObject(brushTwo);
 
-            EndPaint(hWnd, &paint);
+            EndPaint(hWnd, &ps);
             return 0;
         }
 
@@ -141,100 +245,159 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             RECT rect;
             GetClientRect(hWnd, &rect);
 
-            int b = 0;
-            int k = 0;
+            int dx = 0;
+            int move = 0;
 
             switch (LOWORD(wParam))
             {
+                case SB_TOP:
+                {
+                    SCROLLINFO hScroll;
+                    hScroll.cbSize = sizeof(SCROLLINFO);
+                    hScroll.fMask = SIF_RANGE | SIF_POS | SIF_TRACKPOS;
+                    GetScrollInfo(hWnd, SB_HORZ, &hScroll);
+
+                    RECT rect;
+                    GetClientRect(hWnd, &rect);
+
+                    int dx = hScroll.nPos;
+
+                    if (dx == 0)
+                        return 0;
+
+                    dx = -dx;
+
+                    hScroll.nPos += dx;
+
+                    ScrollWindow(hWnd, -dx, 0, NULL, NULL);
+
+                    rect.right = rect.left - dx;
+
+                    SetScrollInfo(hWnd, SB_HORZ, &hScroll, TRUE);
+
+                    InvalidateRect(hWnd, &rect, TRUE);
+
+                    return 0;
+                }
+
+                case SB_BOTTOM:
+                {
+                    SCROLLINFO hScroll;
+                    hScroll.cbSize = sizeof(SCROLLINFO);
+                    hScroll.fMask = SIF_RANGE | SIF_POS | SIF_TRACKPOS;
+                    GetScrollInfo(hWnd, SB_HORZ, &hScroll);
+
+                    RECT rect;
+                    GetClientRect(hWnd, &rect);
+
+                    int dx = hScroll.nMax - hScroll.nPos;
+
+                    if (dx == 0)
+                        return 0;
+
+                    hScroll.nPos += dx;
+
+                    ScrollWindow(hWnd, -dx, 0, NULL, NULL);
+
+                    rect.right = rect.left - dx;
+
+                    SetScrollInfo(hWnd, SB_HORZ, &hScroll, TRUE);
+
+                    InvalidateRect(hWnd, &rect, TRUE);
+
+                    return 0;
+                }
                 case SB_LINERIGHT:
                 {
-                    k = 25;
+                    move = 25;
 
-                    b = hScroll.nMax - hScroll.nPos;
+                    dx = hScroll.nMax - hScroll.nPos;
 
-                    if (b == 0)
+                    if (dx == 0)
                         return 0;
 
-                    if (b > k)
-                        b = k;
+                    if (dx > move)
+                        dx = move;
 
-                    hScroll.nPos += b;
+                    hScroll.nPos += dx;
 
                     break;
                 }
+
                 case SB_PAGERIGHT:
                 {
-                    k = rect.right;
+                    move = rect.right;
 
-                    b = hScroll.nMax - hScroll.nPos;
+                    dx = hScroll.nMax - hScroll.nPos;
 
-                    if (b == 0)
+                    if (dx == 0)
                         return 0;
 
-                    if (b > k)
-                        b = k;
+                    if (dx > move)
+                        dx = move;
 
-                    hScroll.nPos += b;
+                    hScroll.nPos += dx;
 
                     break;
                 }
+
                 case SB_LINELEFT:
                 {
-                    k = 25;
+                    move = 25;
 
-                    b = hScroll.nPos - hScroll.nMin;
+                    dx = hScroll.nPos - hScroll.nMin;
 
-                    if (b == 0)
+                    if (dx == 0)
                         return 0;
 
-                    if (b > k)
-                        b = k;
+                    if (dx > move)
+                        dx = move;
 
-                    b = -b;
+                    dx = -dx;
 
-                    hScroll.nPos += b;
+                    hScroll.nPos += dx;
 
                     break;
                 }
+
                 case SB_PAGELEFT:
                 {
-                    k = rect.right;
+                    move = rect.right;
 
-                    b = hScroll.nPos - hScroll.nMin;
+                    dx = hScroll.nPos - hScroll.nMin;
 
-                    if (b == 0)
+                    if (dx == 0)
                         return 0;
 
-                    if (b > k)
-                        b = k;
+                    if (dx > move)
+                        dx = move;
 
-                    b = -b;
+                    dx = -dx;
 
-                    hScroll.nPos += b;
+                    hScroll.nPos += dx;
 
                     break;
                 }
 
                 case SB_THUMBTRACK:
                 {
-                    b = hScroll.nTrackPos - hScroll.nPos;
+                    dx = hScroll.nTrackPos - hScroll.nPos;
                     hScroll.nPos = hScroll.nTrackPos;
 
                     break;
                 }
             }
 
-            ScrollWindowEx(hWnd, -b, 0, NULL, NULL, NULL, NULL, SW_ERASE);
+            ScrollWindow(hWnd, -dx, 0, NULL, NULL);
             
-            if (b > 0)
-                rect.left = rect.right - b;
+            if (dx > 0)
+                rect.left = rect.right - dx;
             else
-                rect.right = rect.left - b;
+                rect.right = rect.left - dx;
 
             SetScrollInfo(hWnd, SB_HORZ, &hScroll, TRUE);
 
             InvalidateRect(hWnd, &rect, TRUE);
-            UpdateWindow(hWnd);
 
             return 0;
         }
@@ -249,99 +412,158 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
             RECT rect;
             GetClientRect(hWnd, &rect);
 
-            int b = 0;
-            int k = 0;
+            int dy = 0;
+            int move = 0;
 
             switch (LOWORD(wParam))
             {
-                case SB_LINEDOWN: 
+                case SB_BOTTOM:
                 {
-                    k = 25;
+                    SCROLLINFO vScroll;
+                    vScroll.cbSize = sizeof(SCROLLINFO);
+                    vScroll.fMask = SIF_RANGE | SIF_POS | SIF_TRACKPOS;
+                    GetScrollInfo(hWnd, SB_VERT, &vScroll);
 
-                    b = vScroll.nMax - vScroll.nPos;
+                    RECT rect;
+                    GetClientRect(hWnd, &rect);
 
-                    if (b == 0)
+                    int dy = vScroll.nMax - vScroll.nPos;
+
+                    if (dy == 0)
                         return 0;
 
-                    if (b > k)
-                        b = k;
+                    vScroll.nPos += dy;
 
-                    vScroll.nPos += b;
+                    ScrollWindow(hWnd, 0, -dy, NULL, NULL);
+
+                    rect.left = rect.right - dy;
+
+                    SetScrollInfo(hWnd, SB_VERT, &vScroll, TRUE);
+
+                    InvalidateRect(hWnd, &rect, TRUE);
+
+                    return 0;
+                }
+
+                case SB_TOP:
+                {
+                    SCROLLINFO vScroll;
+                    vScroll.cbSize = sizeof(SCROLLINFO);
+                    vScroll.fMask = SIF_RANGE | SIF_POS | SIF_TRACKPOS;
+                    GetScrollInfo(hWnd, SB_VERT, &vScroll);
+
+                    RECT rect;
+                    GetClientRect(hWnd, &rect);
+
+                    int dy = vScroll.nPos;
+
+                    if (dy == 0)
+                        return 0;
+
+                    dy = -dy;
+
+                    vScroll.nPos += dy;
+
+                    ScrollWindow(hWnd, 0, -dy, NULL, NULL);
+
+                    rect.left = rect.right - dy;
+
+                    SetScrollInfo(hWnd, SB_VERT, &vScroll, TRUE);
+
+                    InvalidateRect(hWnd, &rect, TRUE);
+
+                    return 0;
+                }
+
+                case SB_LINEDOWN: 
+                {
+                    move = 25;
+
+                    dy = vScroll.nMax - vScroll.nPos;
+
+                    if (dy == 0)
+                        return 0;
+
+                    if (dy > move)
+                        dy = move;
+
+                    vScroll.nPos += dy;
 
                     break;
                 }
+
                 case SB_PAGEDOWN:
                 {
-                    k = rect.bottom;
+                    move = rect.bottom;
 
-                    b = vScroll.nMax - vScroll.nPos;
+                    dy = vScroll.nMax - vScroll.nPos;
 
-                    if (b == 0)
+                    if (dy == 0)
                         return 0;
 
-                    if (b > k)
-                        b = k;
+                    if (dy > move)
+                        dy = move;
 
-                    vScroll.nPos += b;
+                    vScroll.nPos += dy;
 
                     break;
                 }
 
                 case SB_LINEUP: 
                 {
-                    k = 25;
+                    move = 25;
 
-                    b = vScroll.nPos - vScroll.nMin;
+                    dy = vScroll.nPos - vScroll.nMin;
 
-                    if (b == 0)
+                    if (dy == 0)
                         return 0;
 
-                    if (b > k)
-                        b = k;
+                    if (dy > move)
+                        dy = move;
 
-                    b = -b;
-                    vScroll.nPos += b;
+                    dy = -dy;
+                    vScroll.nPos += dy;
 
                     break;
                 }
+
                 case SB_PAGEUP:
                 {
-                    k = rect.bottom;
+                    move = rect.bottom;
 
-                    b = vScroll.nPos - vScroll.nMin;
+                    dy = vScroll.nPos - vScroll.nMin;
 
-                    if (b == 0)
+                    if (dy == 0)
                         return 0;
 
-                    if (b > k)
-                        b = k;
+                    if (dy > move)
+                        dy = move;
 
-                    b = -b;
-                    vScroll.nPos += b;
+                    dy = -dy;
+                    vScroll.nPos += dy;
 
                     break;
                 }
 
                 case SB_THUMBTRACK:
                 {
-                    b = vScroll.nTrackPos - vScroll.nPos;
+                    dy = vScroll.nTrackPos - vScroll.nPos;
                     vScroll.nPos = vScroll.nTrackPos;
 
                     break;
                 }
             }
 
-            ScrollWindowEx(hWnd, 0, -b, NULL, NULL, NULL, NULL, SW_ERASE);
+            ScrollWindow(hWnd, 0, -dy, NULL, NULL);
 
-            if (b > 0)
-                rect.top = rect.bottom - b;
+            if (dy > 0)
+                rect.top = rect.bottom - dy;
             else
-                rect.bottom = rect.top - b;
+                rect.bottom = rect.top - dy;
 
             SetScrollInfo(hWnd, SB_VERT, &vScroll, TRUE);
 
             InvalidateRect(hWnd, &rect, TRUE);
-            UpdateWindow(hWnd);
 
             return 0;
         }
@@ -349,8 +571,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam){
         case WM_DESTROY:
             PostQuitMessage(0);
             return 0;
-
-        }
+    }
 
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
