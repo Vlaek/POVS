@@ -22,7 +22,9 @@
 #define IDS_STRING202                   202
 #define IDS_STRING203                   203
 #define IDS_BPM1                        300
+#define ID_BMP1                         300
 #define IDS_BPM2                        301
+#define ID_BMP2                         301
 #define ID_32771                        32771
 #define MENU_QUIT                       32772
 #define IDC_STATIC                      -1
@@ -32,7 +34,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        133
+#define _APS_NEXT_RESOURCE_VALUE        134
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         1000
 #define _APS_NEXT_SYMED_VALUE           110

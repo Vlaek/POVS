@@ -47,9 +47,11 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
     SetWindowLong(hMainWnd, GWL_USERDATA, LONG(&hBrushes));
 
     char string[BUFFERMAX], *end;
-    LoadString(hInstance, 0, string, BUFFERMAX);
+
+    LoadString(hInstance, IDS_STRINGBEGIN, string, BUFFERMAX);
     ULONG stringIdBegin = strtoul(string, &end, 10);
-    LoadString(hInstance, 1, string, BUFFERMAX);
+
+    LoadString(hInstance, IDS_STRINGEND, string, BUFFERMAX);
     ULONG stringIdEnd = strtoul(string, &end, 10);
 
     for (UINT i = stringIdBegin; i <= stringIdEnd; i++)
@@ -72,8 +74,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
     {
         case WM_RBUTTONDOWN: 
         {
-            POINT cursorPos;
-            GetCursorPos(&cursorPos);
+            POINT p;
+            GetCursorPos(&p);
 
             HMENU hPopupMenu = CreatePopupMenu();
 
@@ -81,9 +83,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
             char string[BUFFERMAX], *end;
 
-            LoadString(hInstance, 0, string, BUFFERMAX);
+            LoadString(hInstance, IDS_STRINGBEGIN, string, BUFFERMAX);
             ULONG stringIdBegin = strtoul(string, &end, 10);
-            LoadString(hInstance, 1, string, BUFFERMAX);
+
+            LoadString(hInstance, IDS_STRINGEND, string, BUFFERMAX);
             ULONG stringIdEnd = strtoul(string, &end, 10);
 
             for (UINT i = stringIdBegin; i <= stringIdEnd; i++)
@@ -92,25 +95,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
             AppendMenu(hPopupMenu, MF_SEPARATOR, 0, NULL);
 
-            LoadString(hInstance, IDS_BPM1, string, BUFFERMAX);
+            LoadString(hInstance, ID_BMP1, string, BUFFERMAX);
             AppendMenu(hPopupMenu, MF_STRING, IDB_BITMAP1, string);
-            LoadString(hInstance, IDS_BPM2, string, BUFFERMAX);
+            LoadString(hInstance, ID_BMP2, string, BUFFERMAX);
             AppendMenu(hPopupMenu, MF_STRING, IDB_BITMAP2, string);
 
-            TrackPopupMenu(hPopupMenu, TPM_CENTERALIGN, cursorPos.x, cursorPos.y, 0, hWnd, NULL);
+            TrackPopupMenu(hPopupMenu, TPM_LEFTALIGN | TPM_TOPALIGN, p.x, p.y, 0, hWnd, NULL);
 
             return 0;
         }
 
         case WM_COMMAND: 
         {
-            HINSTANCE hInstance = (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE);
-
             switch (wParam)
             {
                 case IDB_BITMAP1:
                 {
-                    HBRUSH* hBrush = (HBRUSH*)GetWindowLong(hWnd, GWL_USERDATA);
+                    HBRUSH *hBrush = (HBRUSH*)GetWindowLong(hWnd, GWL_USERDATA);
 
                     SetClassLong(hWnd, GCL_HBRBACKGROUND, (LONG)hBrush[0]);
 
@@ -121,7 +122,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
                 case IDB_BITMAP2:
                 {
-                    HBRUSH* hBrush = (HBRUSH*)GetWindowLong(hWnd, GWL_USERDATA);
+                    HBRUSH *hBrush = (HBRUSH*)GetWindowLong(hWnd, GWL_USERDATA);
 
                     SetClassLong(hWnd, GCL_HBRBACKGROUND, (LONG)hBrush[1]);
 
@@ -132,6 +133,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
                 default:
                 {
+                    HINSTANCE hInstance = (HINSTANCE)GetWindowLong(hWnd, GWL_HINSTANCE);
+
                     char wndTitle[BUFFERMAX];
 
                     LoadString(hInstance, wParam, wndTitle, BUFFERMAX);
@@ -154,25 +157,3 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 
     return DefWindowProc(hWnd, message, wParam, lParam);
 }
-// Лаба 6
-// N кнопок, скроллинг, N радио кнопок и надписи их номеров
-// M кнопка зажата и радио кнопка тоже
-// при нажатие на кнопку активировать радио кнопку тоже и наоборот
-
-// | [Кнопка №N] O Радио кнопка №N |
-// обработка скроллинг, скроллирование на высоту элементов. 1 скроллинг - 1 полосочка (высота кнопки + зазор)
-// WM_CREATE создавать кнопки
-// WM_COMMAND 
-// Без глобальных переменных
-
-//Лаба 7
-//Создается приложение с 1 главынм окном, в клиентской области MxN пикселей прямоугольник
-//Только в нем производится отрисовка следа мыши при нажатии ЛКМ
-//Линейная интерполяция от предыдущей точки, соединение двух точек
-// делать линии при 2 нажатиях
-// приложение отслуживается изменения размеров своего окна и препятствует
-// в качестве мин. размеров используется MxN + 40%
-// минимальные размеры окна 1.4M x 1.4N
-// WM_SIZING, WM_MOUSEMOVE, WM_PAINT
-
-// Еще 3 задания
